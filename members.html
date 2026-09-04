@@ -1,0 +1,422 @@
+<!DOCTYPE HTML>
+<!--
+	Theory by TEMPLATED
+	templated.co @templatedco
+	Released for free under the Creative Commons Attribution 3.0 license (templated.co/license)
+-->
+<html>
+	<head>
+		<title>Members | SubMHW-WG</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<style>
+			.member-grid {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 1.5em;
+			}
+
+			.member-section {
+				margin-top: 2.5em;
+			}
+
+			.member-section h3 {
+				font-size: 2.0em;
+				margin-bottom: 1em;
+			}
+
+			.member-section:first-of-type {
+				margin-top: 0;
+			}
+
+			.member-card {
+				width: 280px;
+				margin: 0;
+				height: 380px;
+				display: flex;
+				flex-direction: column;
+			}
+
+			.member-card.expanded {
+				height: auto;
+			}
+
+			.member-card .image.round {
+				margin: 0 0 1em 0;
+				width: 100px;
+				height: 100px;
+				overflow: hidden;
+				display: block;
+			}
+
+			.member-card .image.round img {
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+				object-position: center;
+			}
+
+			.member-header {
+				display: flex;
+				align-items: flex-start;
+				gap: 0.5em;
+				margin-bottom: 0.75em;
+			}
+
+			.member-header h3 {
+				flex: 1;
+				margin: 0;
+                font-size: 1.3em;
+			}
+
+			.member-header .button {
+				white-space: nowrap;
+			}
+
+			.member-meta {
+				margin-bottom: 0.75em;
+			}
+
+			.member-meta p {
+				margin: 0;
+				font-size: 0.95em;
+			}
+
+			.member-bio {
+				font-size: 0.95em;
+				display: none;
+			}
+
+			.member-bio.visible {
+				display: block;
+			}
+
+			.member-toggle {
+				margin-top: 0.75em;
+			}
+
+			.member-links {
+				margin-top: auto;
+				display: flex;
+				gap: 0.75em;
+				flex-wrap: wrap;
+			}
+		</style>
+	</head>
+	<body class="subpage">
+
+		<!-- Header -->
+			<header id="header">
+				<div class="inner">
+					<a href="index.html" class="logo">Home</a>
+					<nav id="nav">
+						<a href="index.html">Home</a>
+						<a href="members.html">Members</a>
+						<a href="events.html">Events</a>
+
+					</nav>
+					<a href="#navPanel" class="navPanelToggle"><span class="fa fa-bars"></span></a>
+				</div>
+			</header>
+
+		<!-- Main -->
+			<section id="main" class="wrapper">
+				<div class="inner">
+					<header class="align-center">
+						<h2>Members</h2>
+					</header>
+
+					<div id="memberSections"></div>
+					<p id="membersStatus"></p>
+				</div>
+			</section>
+
+		<!-- Footer -->
+			<footer id="footer">
+				<div class="inner">
+					<div class="flex">
+						<div class="copyright">
+							&copy; SubMHW-WG, 2026. Design: <a href="https://templated.co">TEMPLATED</a>.
+						</div>
+					</div>
+				</div>
+			</footer>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/skel.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script>
+				(function() {
+					var sectionsContainer = document.getElementById('memberSections');
+					var statusLabel = document.getElementById('membersStatus');
+					var sectionOrder = ['chair', 'full', 'associate'];
+					var sectionTitles = {
+						chair: 'Chairs',
+						full: 'Full Members',
+						associate: 'Associate Members'
+					};
+
+					function parseCsv(text) {
+						var rows = [];
+						var current = '';
+						var row = [];
+						var insideQuotes = false;
+
+						for (var i = 0; i < text.length; i++) {
+							var ch = text[i];
+
+							if (insideQuotes) {
+								if (ch === '"' && text[i + 1] === '"') {
+									current += '"';
+									i++;
+								} else if (ch === '"') {
+									insideQuotes = false;
+								} else {
+									current += ch;
+								}
+							} else if (ch === '"') {
+								insideQuotes = true;
+							} else if (ch === ',') {
+								row.push(current);
+								current = '';
+							} else if (ch === '\n') {
+								row.push(current);
+								rows.push(row);
+								row = [];
+								current = '';
+							} else if (ch !== '\r') {
+								current += ch;
+							}
+						}
+
+						if (current.length > 0 || row.length > 0) {
+							row.push(current);
+							rows.push(row);
+						}
+
+						if (!rows.length) {
+							return [];
+						}
+
+						var headers = rows[0];
+						var output = [];
+
+						for (var r = 1; r < rows.length; r++) {
+							if (!rows[r].length || !rows[r][0].trim()) {
+								continue;
+							}
+
+							var item = {};
+							for (var c = 0; c < headers.length; c++) {
+								item[headers[c]] = rows[r][c] ? rows[r][c].trim() : '';
+							}
+							output.push(item);
+						}
+
+						return output;
+					}
+
+					function normalizeUrl(value) {
+						if (!value) {
+							return '';
+						}
+						var cleaned = value.trim();
+						if (!cleaned) {
+							return '';
+						}
+						if (/^https?:\/\//i.test(cleaned)) {
+							return cleaned;
+						}
+						return 'https://' + cleaned;
+					}
+
+					function addText(parent, text) {
+						var p = document.createElement('p');
+						p.textContent = text;
+						parent.appendChild(p);
+					}
+
+					function buildCard(member) {
+						var article = document.createElement('article');
+						article.className = 'box member-card';
+
+						if (member.image) {
+						var imageWrap = document.createElement('div');
+						imageWrap.className = 'image round';
+
+						var image = document.createElement('img');
+						image.src = 'images/pictures/' + encodeURIComponent(member.image);
+						image.alt = member.Name || 'Member photo';
+						image.onerror = function() {
+							imageWrap.style.display = 'none';
+						};
+
+						imageWrap.appendChild(image);
+						article.appendChild(imageWrap);
+					}
+
+					var headerDiv = document.createElement('div');
+					headerDiv.className = 'member-header';
+
+					var heading = document.createElement('h3');
+					heading.textContent = member.Name || 'Unnamed Member';
+					headerDiv.appendChild(heading);
+
+					var profileLink = normalizeUrl(member.Link);
+					if (profileLink) {
+						var profileBtn = document.createElement('a');
+						profileBtn.className = 'button alt small';
+						profileBtn.href = profileLink;
+						profileBtn.target = '_blank';
+						profileBtn.rel = 'noopener noreferrer';
+						profileBtn.textContent = 'Website';
+						headerDiv.appendChild(profileBtn);
+					}
+
+					article.appendChild(headerDiv);
+						var meta = document.createElement('div');
+						meta.className = 'member-meta';
+
+						if (member.Title) {
+							addText(meta, member.Title);
+						}
+						if (member.Affiliation) {
+							addText(meta, member.Affiliation);
+						}
+
+						var locationParts = [member['City/State'], member.Country].filter(Boolean);
+						if (locationParts.length) {
+							addText(meta, locationParts.join(', '));
+						}
+
+						if (meta.children.length) {
+							article.appendChild(meta);
+						}
+
+						if (member.Bio) {
+							var bio = document.createElement('p');
+							bio.className = 'member-bio';
+							bio.textContent = member.Bio;
+							article.appendChild(bio);
+
+							var toggle = document.createElement('a');
+							toggle.href = '#';
+							toggle.className = 'button alt small member-toggle';
+							toggle.textContent = 'See bio';
+							toggle.onclick = function(event) {
+								event.preventDefault();
+								bio.classList.toggle('visible');
+								article.classList.toggle('expanded');
+							};
+							article.appendChild(toggle);
+						}
+
+						var links = [
+						normalizeUrl(member.Link2)
+					].filter(Boolean);
+
+					if (links.length) {
+						var linksWrap = document.createElement('div');
+						linksWrap.className = 'member-links';
+
+						for (var i = 0; i < links.length; i++) {
+							var a = document.createElement('a');
+							a.className = 'button alt small';
+							a.href = links[i];
+							a.target = '_blank';
+							a.rel = 'noopener noreferrer';
+							a.textContent = 'Link';
+							}
+
+							article.appendChild(linksWrap);
+						}
+
+						return article;
+					}
+
+					function getMembershipKey(value) {
+						if (!value) {
+							return 'associate';
+						}
+
+						var normalized = value.toLowerCase().trim();
+						if (normalized.indexOf('chair') === 0) {
+							return 'chair';
+						}
+						if (normalized.indexOf('full') === 0) {
+							return 'full';
+						}
+						if (normalized.indexOf('associate') === 0) {
+							return 'associate';
+						}
+
+						return 'associate';
+					}
+
+					function buildSection(title, members) {
+						if (!members.length) {
+							return;
+						}
+
+						var section = document.createElement('section');
+						section.className = 'member-section';
+
+						var heading = document.createElement('h3');
+						heading.textContent = title;
+						section.appendChild(heading);
+
+						var grid = document.createElement('div');
+						grid.className = 'member-grid';
+
+						for (var i = 0; i < members.length; i++) {
+							grid.appendChild(buildCard(members[i]));
+						}
+
+						section.appendChild(grid);
+						sectionsContainer.appendChild(section);
+					}
+
+					fetch('assets/files/member_bios.csv')
+						.then(function(response) {
+							if (!response.ok) {
+								throw new Error('Unable to load member bios CSV.');
+							}
+							return response.text();
+						})
+						.then(function(csvText) {
+							var members = parseCsv(csvText);
+
+							if (!members.length) {
+								statusLabel.textContent = 'No member records found.';
+								return;
+							}
+
+							var groupedMembers = {
+								chair: [],
+								full: [],
+								associate: []
+							};
+
+							for (var i = 0; i < members.length; i++) {
+								var key = getMembershipKey(members[i].Membership);
+								groupedMembers[key].push(members[i]);
+							}
+
+							for (var j = 0; j < sectionOrder.length; j++) {
+								var sectionKey = sectionOrder[j];
+								buildSection(sectionTitles[sectionKey], groupedMembers[sectionKey]);
+							}
+
+							;
+						})
+						.catch(function() {
+							statusLabel.textContent = 'Unable to load member profiles right now.';
+						});
+				})();
+			</script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
