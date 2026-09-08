@@ -88,6 +88,12 @@
 				text-decoration: underline;
 			}
 
+			.member-scholar {
+				display: inline-block;
+				font-size: 0.95em;
+				text-decoration: underline;
+			}
+
 			.member-actions {
 				display: flex;
 				flex-direction: column;
@@ -361,11 +367,11 @@
 
 							for (var i = 0; i < links.length; i++) {
 								var a = document.createElement('a');
-								a.className = 'button alt small';
+								a.className = 'member-scholar';
 								a.href = links[i];
 								a.target = '_blank';
 								a.rel = 'noopener noreferrer';
-								a.textContent = 'Link';
+								a.textContent = 'Google Scholar';
 								linksWrap.appendChild(a);
 							}
 
