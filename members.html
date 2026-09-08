@@ -12,9 +12,10 @@
 		<link rel="stylesheet" href="assets/css/main.css" />
 		<style>
 			.member-grid {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 1.5em;
+				display: grid;
+				grid-template-columns: repeat(auto-fit, 280px);
+				justify-content: center;
+				gap: 2em 1.75em;
 			}
 
 			.member-section {
@@ -32,22 +33,35 @@
 
 			.member-card {
 				width: 280px;
+				max-width: none;
 				margin: 0;
-				height: 380px;
+				height: 300px;
 				display: flex;
 				flex-direction: column;
+				min-width: 0;
+				overflow: hidden;
 			}
 
 			.member-card.expanded {
 				height: auto;
 			}
 
+			.member-details {
+				display: none;
+				margin-top: 0.75em;
+			}
+
+			.member-details.visible {
+				display: block;
+			}
+
 			.member-card .image.round {
 				margin: 0 0 1em 0;
 				width: 100px;
-				height: 100px;
+				aspect-ratio: 1 / 1;
 				overflow: hidden;
 				display: block;
+				flex: 0 0 auto;
 			}
 
 			.member-card .image.round img {
@@ -58,20 +72,50 @@
 			}
 
 			.member-header {
-				display: flex;
-				align-items: flex-start;
-				gap: 0.5em;
+				display: block;
 				margin-bottom: 0.75em;
 			}
 
 			.member-header h3 {
-				flex: 1;
 				margin: 0;
                 font-size: 1.3em;
 			}
 
-			.member-header .button {
-				white-space: nowrap;
+			.member-website {
+				display: inline-block;
+				margin-top: 0.25em;
+				font-size: 0.95em;
+				text-decoration: underline;
+			}
+
+			.member-actions {
+				display: flex;
+				flex-direction: column;
+				gap: 0.5em;
+				margin-top: 0.75em;
+			}
+
+			.member-actions .button {
+				margin-left: 0;
+				width: 100%;
+				text-align: center;
+				white-space: normal;
+			}
+
+			@media screen and (max-width: 480px) {
+				.member-grid {
+					grid-template-columns: 1fr;
+					justify-content: stretch;
+				}
+
+				.member-card {
+					width: 100%;
+					height: auto;
+				}
+
+				.member-card .image.round {
+					width: 88px;
+				}
 			}
 
 			.member-meta {
@@ -85,11 +129,6 @@
 
 			.member-bio {
 				font-size: 0.95em;
-				display: none;
-			}
-
-			.member-bio.visible {
-				display: block;
 			}
 
 			.member-toggle {
@@ -266,40 +305,76 @@
 
 					var profileLink = normalizeUrl(member.Link);
 					if (profileLink) {
-						var profileBtn = document.createElement('a');
-						profileBtn.className = 'button alt small';
-						profileBtn.href = profileLink;
-						profileBtn.target = '_blank';
-						profileBtn.rel = 'noopener noreferrer';
-						profileBtn.textContent = 'Website';
-						headerDiv.appendChild(profileBtn);
+						var profileText = document.createElement('a');
+						profileText.className = 'member-website';
+						profileText.href = profileLink;
+						profileText.target = '_blank';
+						profileText.rel = 'noopener noreferrer';
+						profileText.textContent = 'Website';
+						headerDiv.appendChild(profileText);
 					}
 
 					article.appendChild(headerDiv);
+
+						var details = document.createElement('div');
+						details.className = 'member-details';
+
+						var hasDetails = false;
+
 						var meta = document.createElement('div');
 						meta.className = 'member-meta';
 
 						if (member.Title) {
 							addText(meta, member.Title);
+							hasDetails = true;
 						}
 						if (member.Affiliation) {
 							addText(meta, member.Affiliation);
+							hasDetails = true;
 						}
 
 						var locationParts = [member['City/State'], member.Country].filter(Boolean);
 						if (locationParts.length) {
 							addText(meta, locationParts.join(', '));
+							hasDetails = true;
 						}
 
 						if (meta.children.length) {
-							article.appendChild(meta);
+							details.appendChild(meta);
 						}
 
 						if (member.Bio) {
 							var bio = document.createElement('p');
 							bio.className = 'member-bio';
 							bio.textContent = member.Bio;
-							article.appendChild(bio);
+							details.appendChild(bio);
+							hasDetails = true;
+						}
+
+						var links = [
+							normalizeUrl(member.Link2)
+						].filter(Boolean);
+
+						if (links.length) {
+							var linksWrap = document.createElement('div');
+							linksWrap.className = 'member-links';
+
+							for (var i = 0; i < links.length; i++) {
+								var a = document.createElement('a');
+								a.className = 'button alt small';
+								a.href = links[i];
+								a.target = '_blank';
+								a.rel = 'noopener noreferrer';
+								a.textContent = 'Link';
+								linksWrap.appendChild(a);
+							}
+
+							details.appendChild(linksWrap);
+							hasDetails = true;
+						}
+
+						if (hasDetails) {
+							article.appendChild(details);
 
 							var toggle = document.createElement('a');
 							toggle.href = '#';
@@ -307,30 +382,11 @@
 							toggle.textContent = 'See bio';
 							toggle.onclick = function(event) {
 								event.preventDefault();
-								bio.classList.toggle('visible');
+								details.classList.toggle('visible');
 								article.classList.toggle('expanded');
+								toggle.textContent = details.classList.contains('visible') ? 'Hide bio' : 'See bio';
 							};
 							article.appendChild(toggle);
-						}
-
-						var links = [
-						normalizeUrl(member.Link2)
-					].filter(Boolean);
-
-					if (links.length) {
-						var linksWrap = document.createElement('div');
-						linksWrap.className = 'member-links';
-
-						for (var i = 0; i < links.length; i++) {
-							var a = document.createElement('a');
-							a.className = 'button alt small';
-							a.href = links[i];
-							a.target = '_blank';
-							a.rel = 'noopener noreferrer';
-							a.textContent = 'Link';
-							}
-
-							article.appendChild(linksWrap);
 						}
 
 						return article;
